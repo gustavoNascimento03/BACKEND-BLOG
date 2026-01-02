@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+    app:
+        build: .
+        ports:
+            - "3000:3000"
+        depends_on:
+            - mongo
+        environment:
+            - PORT=3000
+            # AQUI ESTÁ A MUDANÇA:
+            # Em vez de escrever a senha, usamos a variável.
+            # O Docker vai ler o valor que está no seu arquivo .env
+            - JWT_SECRET=${JWT_SECRET}
+
+            # ATENÇÃO: O Mongo URI precisa ser fixo aqui ou diferente do .env local
+            # Motivo: Dentro do Docker, "localhost" não existe. O nome do host é "mongo" (nome do serviço abaixo)
+            - MONGO_URI=mongodb://mongo:27017/tech_challenge_blog
+        restart: always
+
+    mongo:
+        image: mongo:latest
+        ports:
+            - "27017:27017"
+        volumes:
+            - mongo-data:/data/db
+
+volumes:
+    mongo-data:
