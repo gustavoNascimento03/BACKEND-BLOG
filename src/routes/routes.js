@@ -17,4 +17,9 @@ router.post("/posts", auth, isProfessor, postController.create);
 router.put("/posts/:id", auth, isProfessor, postController.update);
 router.delete("/posts/:id", auth, isProfessor, postController.delete);
 
+// Lista de Usuários
+router.get("/users", auth, isProfessor, authController.getAllUsers);
+router.put("/users/:id", authController.updateUser);
+router.delete("/users/:id", authController.deleteUser);
+
 module.exports = router;
