@@ -7,7 +7,7 @@ exports.auth = (req, res, next) => {
     try {
         const decoded = jwt.verify(
             token.replace("Bearer ", ""),
-            process.env.JWT_SECRET || "secret"
+            process.env.JWT_SECRET || "secret",
         );
 
         req.user = decoded;
