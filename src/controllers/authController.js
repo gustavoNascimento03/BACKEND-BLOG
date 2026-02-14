@@ -2,43 +2,31 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// Registro de usuários (Professores e Alunos)
+// Registro de usuários
 exports.register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
-        // 1. Validação básica
         if (!name || !email || !password || !role) {
             return res
                 .status(400)
                 .json({ msg: "Por favor, preencha todos os campos." });
         }
 
-        // 2. Verifica se usuário já existe
         let user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({ msg: "Usuário já existe" });
         }
 
-        // 3. Cria a instância do usuário
-        user = new User({
-            name,
-            email,
-            password,
-            role,
-        });
+        user = new User({ name, email, password, role });
 
-        // 4. Criptografa a senha (Hash) antes de salvar
+        // Criptografia da senha
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(password, salt);
 
         await user.save();
 
-        // 5. Gera o Token JWT para login imediato
-        const payload = {
-            id: user.id,
-            role: user.role,
-        };
+        const payload = { id: user.id, role: user.role };
 
         jwt.sign(
             payload,
@@ -47,7 +35,7 @@ exports.register = async (req, res) => {
             (err, token) => {
                 if (err) throw err;
                 res.status(201).json({ token });
-            }
+            },
         );
     } catch (err) {
         console.error(err.message);
@@ -58,8 +46,6 @@ exports.register = async (req, res) => {
 // Lista usuários
 exports.getAllUsers = async (req, res) => {
     try {
-        // Busca todos os usuários, mas esconde a senha (-password)
-        const User = require("../models/User"); // Garanta que o Model está importado
         const users = await User.find({}, "-password");
         res.status(200).json(users);
     } catch (error) {
@@ -67,31 +53,22 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
-// Login
+// Login (CORRIGIDO PARA O FRONTEND)
 exports.login = async (req, res) => {
-    console.log("Chegou no Login!");
-    console.log("Dados recebidos:", req.body);
-
     try {
         const { email, password } = req.body;
 
-        // 1. Verifica se o usuário existe
-        let user = await User.findOne({ email });
+        const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ msg: "Credenciais Inválidas" });
         }
 
-        // 2. Compara a senha enviada com o hash no banco
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ msg: "Credenciais Inválidas" });
         }
 
-        // 3. Gera e retorna o Token
-        const payload = {
-            id: user.id,
-            role: user.role,
-        };
+        const payload = { id: user.id, role: user.role };
 
         jwt.sign(
             payload,
@@ -99,8 +76,17 @@ exports.login = async (req, res) => {
             { expiresIn: "1h" },
             (err, token) => {
                 if (err) throw err;
-                res.json({ token });
-            }
+                // AQUI ESTA A MUDANÇA: Retornamos token E o usuário
+                res.json({
+                    token,
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                    },
+                });
+            },
         );
     } catch (err) {
         console.error(err.message);
@@ -108,36 +94,32 @@ exports.login = async (req, res) => {
     }
 };
 
-// ATUALIZAR USUÁRIO
+// ATUALIZAR USUÁRIO (CORRIGIDO HASH DE SENHA)
 exports.updateUser = async (req, res) => {
-    const { id } = req.params;
-    const { name, email, role, password } = req.body;
-
     try {
-        const User = require("../models/User"); // Importe caso não esteja no topo
+        const { name, email, password } = req.body;
+        const userId = req.params.id;
 
-        // Prepara o objeto de atualização
-        const updateData = { name, email, role };
+        let updateData = { name, email };
 
-        // Se o usuário mandou uma nova senha, adiciona ao objeto
-        // (Obs: Dependendo do seu Model, pode ser necessário tratar o hash aqui,
-        // mas vamos manter simples para resolver o erro 404 primeiro)
-        if (password) {
-            updateData.password = password;
+        if (password && password.trim() !== "") {
+            const salt = await bcrypt.genSalt(10);
+            updateData.password = await bcrypt.hash(password, salt);
         }
 
-        // Busca pelo ID e atualiza
-        const user = await User.findByIdAndUpdate(id, updateData, {
-            new: true,
-        });
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $set: updateData },
+            { new: true },
+        ).select("-password");
 
-        if (!user) {
+        if (!user)
             return res.status(404).json({ msg: "Usuário não encontrado" });
-        }
 
-        res.status(200).json({ msg: "Usuário atualizado com sucesso!", user });
+        res.json(user);
     } catch (error) {
-        res.status(500).json({ msg: "Erro ao atualizar usuário" });
+        console.error(error);
+        res.status(500).json({ msg: "Erro ao atualizar perfil" });
     }
 };
 
@@ -145,7 +127,6 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
     const { id } = req.params;
     try {
-        const User = require("../models/User");
         const user = await User.findByIdAndDelete(id);
 
         if (!user) {
@@ -155,5 +136,58 @@ exports.deleteUser = async (req, res) => {
         res.status(200).json({ msg: "Usuário excluído com sucesso!" });
     } catch (error) {
         res.status(500).json({ msg: "Erro ao excluir usuário" });
+    }
+};
+
+// MEU PERFIL (USADO NO FRONTEND)
+exports.getMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select("-password");
+        if (!user)
+            return res.status(404).json({ error: "Usuário não encontrado." });
+        return res.json(user);
+    } catch (error) {
+        return res.status(500).json({ error: "Erro ao buscar perfil." });
+    }
+};
+
+exports.inviteUser = async (req, res) => {
+    try {
+        const { name, email, role } = req.body;
+
+        // 1. Validação
+        if (!name || !email || !role) {
+            return res.status(400).json({ msg: "Preencha todos os campos." });
+        }
+
+        // 2. Verifica se já existe
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ msg: "E-mail já cadastrado." });
+        }
+
+        // 3. Cria o usuário com senha padrão
+        // (Em um app real, aqui enviaríamos um e-mail de convite)
+        const password = "123"; // Senha temporária
+
+        const newUser = new User({
+            name,
+            email,
+            password, // O Model vai criptografar isso antes de salvar?
+            role,
+        });
+
+        // 4. Criptografar a senha manualmente (se o seu Model não fizer via pre-save hook)
+        const salt = await bcrypt.genSalt(10);
+        newUser.password = await bcrypt.hash(password, salt);
+
+        await newUser.save();
+
+        res.status(201).json({
+            msg: `Usuário criado com sucesso! Senha temporária: ${password}`,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Erro ao convidar usuário." });
     }
 };

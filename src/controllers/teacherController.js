@@ -1,4 +1,4 @@
-const TeacherNote = require("../models/teacherNote");
+const TeacherNote = require("../models/TeacherNote");
 
 // GET /teacher/notes
 exports.getNotes = async (req, res) => {
@@ -26,11 +26,9 @@ exports.createNote = async (req, res) => {
         const { content } = req.body;
 
         if (req.user.role !== "Professor") {
-            return res
-                .status(403)
-                .json({
-                    msg: "Apenas professores podem criar notas nesta área.",
-                });
+            return res.status(403).json({
+                msg: "Apenas professores podem criar notas nesta área.",
+            });
         }
 
         if (!content) {

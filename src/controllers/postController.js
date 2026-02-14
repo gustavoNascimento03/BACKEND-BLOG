@@ -23,7 +23,7 @@ exports.getById = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id).populate(
             "author",
-            "name"
+            "name",
         );
         if (!post) return res.status(404).json({ msg: "Post não encontrado" });
         res.json(post);
@@ -37,44 +37,41 @@ exports.getById = async (req, res) => {
 // POST /posts
 exports.create = async (req, res) => {
     try {
-        const { title, content } = req.body;
+        const { title, content, category } = req.body;
 
-        // Verifica se o ID do usuário chegou corretamente
-        if (!req.user || !req.user.id) {
-            return res.status(400).json({
-                msg: "Erro de autenticação: ID do usuário não encontrado.",
-            });
-        }
-
-        const newPost = new Post({
+        const newPost = await Post.create({
             title,
             content,
-            author: req.user.id,
+            category,
+            author: req.userId,
         });
 
-        const post = await newPost.save();
-        res.status(201).json(post);
-    } catch (err) {
-        console.error("Erro ao criar post:", err); // mostrará o erro real no terminal
-        res.status(500).send("Erro ao criar post");
+        res.status(201).json(newPost);
+    } catch (error) {
+        console.error("Erro no servidor:", error);
+        res.status(500).json({ error: "Erro ao criar postagem" });
     }
 };
 
 // PUT /posts/:id
 exports.update = async (req, res) => {
     try {
-        const { title, content } = req.body;
-        let post = await Post.findByIdAndUpdate(
+        const { title, content, category } = req.body;
+
+        const post = await Post.findByIdAndUpdate(
             req.params.id,
-            { $set: { title, content } },
-            { new: true }
+            { title, content, category },
+            { new: true },
         );
-        if (!post) return res.status(404).json({ msg: "Post não encontrado" });
-        res.json(post);
-    } catch (err) {
-        if (err.kind === "ObjectId")
+
+        if (!post) {
             return res.status(404).json({ msg: "Post não encontrado" });
-        res.status(500).send("Erro ao atualizar post");
+        }
+
+        res.json(post);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Erro ao atualizar post" });
     }
 };
 

@@ -10,7 +10,12 @@ exports.auth = (req, res, next) => {
             process.env.JWT_SECRET || "secret",
         );
 
+        // CORREÇÃO AQUI:
+        // 1. Salvamos o payload inteiro em req.user (para o isProfessor ler a role)
         req.user = decoded;
+
+        // 2. Mantemos o req.userId para compatibilidade com seus controllers antigos
+        req.userId = decoded.id;
 
         next();
     } catch (e) {
@@ -19,7 +24,7 @@ exports.auth = (req, res, next) => {
 };
 
 exports.isProfessor = (req, res, next) => {
-    // Verifica se o usuário existe e se a role é professor
+    // Agora req.user existe porque definimos no auth acima
     if (!req.user || req.user.role !== "professor") {
         return res.status(403).json({ msg: "Acesso restrito a professores" });
     }

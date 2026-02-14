@@ -9,8 +9,7 @@ services:
             - mongo
         environment:
             - PORT=3000
-            # AQUI ESTÁ A MUDANÇA:
-            # Em vez de escrever a senha, usamos a variável.
+            # Em vez de escrever a senha, usa a variavel.
             # O Docker vai ler o valor que está no seu arquivo .env
             - JWT_SECRET=${JWT_SECRET}
 

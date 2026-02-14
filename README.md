@@ -3,6 +3,7 @@
 Este repositório contém o Back-end da aplicação de Blogging. A API foi construída com foco em escalabilidade, segurança e testabilidade.
 
 ## 🚀 Tecnologias
+
 O projeto utiliza uma stack moderna e robusta:
 
 - **Linguagem:** JavaScript (ES6+)
@@ -26,11 +27,13 @@ Certifique-se de ter instalado em sua máquina:
 ### Passo a Passo
 
 1. **Clone o repositório:**
-````env
-git clone [https://github.com/gustavoNascimento03/BACKEND-BLOG](https://github.com/gustavoNascimento03/BACKEND-BLOG)
-````
+
+```env
+git clone [https://github.com/gustavoNascimento03/BACKEND-BLOG]
+```
 
 2. Configure as variáveis de ambiente: Crie um arquivo `.env` na raiz do projeto com o seguinte conteúdo:
+
     ```env
     PORT=3000
     MONGO_URI=mongodb://localhost:27017/tech_challenge_blog
@@ -87,18 +90,21 @@ Método | Endpoint | Descrição | Acesso
 Para garantir que tudo está integrado corretamente (Banco de Dados + API) fora do ambiente de testes automatizados:
 
 1. No terminal, suba os containers:
-````env
+
+```env
 docker-compose up --build
-````
+```
 
 2. Aguarde os logs de inicialização:
+
 - `MongoDB Conectado`
 - `Servidor rodando na porta 300`
 
 3. Faça uma requisição de teste (pode usar o navegador):
+
 - Acesse: `http://localhost:3000/`
 - Resultado Esperado: Mensagem "API está funcionando!".
 
-
 ## 📄✒️ Autor
-``Gustavo S. Nascimento``
+
+`Gustavo S. Nascimento`
